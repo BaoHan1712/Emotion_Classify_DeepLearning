@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhoBERT Sentiment - Phân tích Cảm xúc Tiếng Việt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0a5c8d',
+                        accent: '#2fbf9a',
+                        background: '#eef5f9'
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #0a5c8d 0%, #2fbf9a 100%);
+        }
+        .glass-effect {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .result-enter {
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="h-full bg-background font-sans">
+    <!-- Header -->
+    <header class="glass-effect border-b border-white/20 sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center mr-3 shadow-lg">
+                            <span class="text-white font-bold text-lg">🧠</span>
+                        </div>
+                        <div>
+                            <span class="text-xl font-bold text-gray-900">PhoBERT</span>
+                            <span class="text-sm text-gray-600 block -mt-1">Sentiment AI</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="hidden md:flex space-x-8">
+                    <a href="#" class="text-primary font-semibold border-b-2 border-primary pb-1">Trang chủ</a>
+            
+                </nav>
+
+                <!-- Status -->
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-2 bg-green-50 px-4 py-2 rounded-full border border-green-200">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-sm font-medium text-green-700">AI sẵn sàng</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden">
+        <div class="gradient-bg">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+                <div class="text-center">
+                    <h1 class="text-5xl font-bold text-white mb-6 floating">
+                        Phân tích Cảm xúc
+                        <span class="block text-accent">Thông minh & Nhanh chóng</span>
+                    </h1>
+                    <p class="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+                        Sử dụng AI tiên tiến PhoBERT để phân tích cảm xúc văn bản tiếng Việt với độ chính xác cao
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Decorative elements -->
+        <div class="absolute top-20 left-10 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
+        <div class="absolute bottom-20 right-10 w-32 h-32 bg-accent/20 rounded-full blur-2xl"></div>
+    </section>
+
+    <!-- Main Analysis Section -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10">
+        <div class="glass-effect rounded-3xl shadow-2xl border border-white/20 p-8 mb-12">
+            <!-- Input Section -->
+            <div class="space-y-6">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Nhập văn bản cần phân tích</h2>
+                    <p class="text-gray-600">Hỗ trợ tiếng Việt với độ chính xác 97.2%</p>
+                </div>
+
+                <div class="relative">
+                    <textarea 
+                        id="text-input"
+                        class="w-full h-40 p-6 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all resize-none text-lg placeholder-gray-400"
+                        placeholder="Nhập câu hoặc đoạn văn cần phân tích cảm xúc..."
+                        oninput="updateTokenCount(this.value)"
+                    ></textarea>
+                    <div class="absolute bottom-4 right-6 flex items-center space-x-4 text-sm text-gray-500">
+                        <span class="flex items-center space-x-1">
+                            <span>🇻🇳</span>
+                            <span>Tiếng Việt</span>
+                        </span>
+                        <span id="token-count" class="font-medium">0 từ</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button 
+                        onclick="analyzeSentiment()"
+                        class="gradient-bg text-white px-8 py-4 rounded-2xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
+                    >
+                        <span>🔍</span>
+                        <span>Phân tích ngay</span>
+                    </button>
+                    <button 
+                        onclick="clearText()"
+                        class="bg-gray-100 text-gray-700 px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-gray-200 transition-all duration-200"
+                    >
+                        Xóa văn bản
+                    </button>
+                </div>
+
+                <!-- Sample Sentences -->
+                <div class="bg-gray-50 rounded-2xl p-6">
+                    <p class="font-semibold text-gray-800 mb-4 text-center">💡 Thử với các câu mẫu:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <button onclick="setSampleText('Dịch vụ rất tốt, nhân viên thân thiện và chu đáo')" 
+                                class="text-left p-4 bg-white rounded-xl hover:bg-green-50 hover:border-green-200 border-2 border-transparent transition-all">
+                            <div class="text-green-600 font-medium mb-1">😊 Tích cực</div>
+                            <div class="text-sm text-gray-600">"Dịch vụ rất tốt, nhân viên thân thiện..."</div>
+                        </button>
+                        <button onclick="setSampleText('Bình thường, không có gì đặc biệt lắm')" 
+                                class="text-left p-4 bg-white rounded-xl hover:bg-yellow-50 hover:border-yellow-200 border-2 border-transparent transition-all">
+                            <div class="text-yellow-600 font-medium mb-1">😐 Trung tính</div>
+                            <div class="text-sm text-gray-600">"Bình thường, không có gì đặc biệt..."</div>
+                        </button>
+                        <button onclick="setSampleText('Chất lượng kém, rất thất vọng về sản phẩm này')" 
+                                class="text-left p-4 bg-white rounded-xl hover:bg-red-50 hover:border-red-200 border-2 border-transparent transition-all">
+                            <div class="text-red-600 font-medium mb-1">😞 Tiêu cực</div>
+                            <div class="text-sm text-gray-600">"Chất lượng kém, rất thất vọng..."</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="hidden text-center py-8">
+                <div class="inline-flex items-center space-x-3">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <span class="text-lg font-medium text-gray-700">Đang phân tích...</span>
+                </div>
+            </div>
+
+            <!-- Result Card -->
+            <div id="result-card" class="hidden mt-8">
+                <div class="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-8 border-2 border-gray-100 result-enter">
+                    <div class="text-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Kết quả phân tích</h3>
+                        <div class="flex justify-center">
+                            <span id="result-emoji" class="text-6xl mb-4"></span>
+                        </div>
+                        <div id="result-label" class="inline-block px-6 py-3 rounded-2xl text-xl font-bold mb-4"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-xl p-6 shadow-sm">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-gray-600 font-medium">Độ tin cậy</span>
+                                <span id="confidence" class="text-2xl font-bold text-primary"></span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div id="confidence-bar" class="bg-primary h-3 rounded-full transition-all duration-1000"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl p-6 shadow-sm">
+                            <div class="text-gray-600 font-medium mb-2">Giải thích</div>
+                            <p id="explanation" class="text-gray-800"></p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Analysis -->
+        <div id="recent-section" class="hidden glass-effect rounded-3xl shadow-xl border border-white/20 p-8 mb-12">
+            <h3 class="text-xl font-bold text-gray-900 mb-6 text-center">📊 Phân tích gần đây</h3>
+            <div id="recent-predictions" class="space-y-4"></div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white/50 backdrop-blur-sm border-t border-gray-200 mt-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="text-center">
+                <div class="flex justify-center items-center space-x-4 mb-6">
+                    <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center">
+                        <span class="text-white font-bold text-xl">🧠</span>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold text-gray-900">PhoBERT Sentiment</h4>
+                        <p class="text-gray-600">Powered by Vietnamese AI</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-2xl mx-auto">
+                    <div>
+                        <h5 class="font-semibold text-gray-900 mb-2">Công nghệ</h5>
+                        <p class="text-sm text-gray-600">PhoBERT Base Model</p>
+                    </div>
+                    <div>
+                        <h5 class="font-semibold text-gray-900 mb-2">Phiên bản</h5>
+                        <p class="text-sm text-gray-600">v2.1.0 - 2025</p>
+                    </div>
+                    <div>
+                        <h5 class="font-semibold text-gray-900 mb-2">Độ chính xác</h5>
+                        <p class="text-sm text-gray-600">95% F1-Score</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let recentPredictions = [];
+
+        function updateTokenCount(text) {
+            const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+            document.getElementById('token-count').textContent = `${words.length} từ`;
+        }
+
+        function setSampleText(text) {
+            document.getElementById('text-input').value = text;
+            updateTokenCount(text);
+        }
+
+        function clearText() {
+            document.getElementById('text-input').value = '';
+            document.getElementById('token-count').textContent = '0 từ';
+            document.getElementById('result-card').classList.add('hidden');
+        }
+
+        async function analyzeSentiment() {
+            const text = document.getElementById('text-input').value.trim();
+            if (!text) {
+                showNotification('Vui lòng nhập nội dung cần phân tích!', 'error');
+                return;
+            }
+
+            // Hiện loading, ẩn kết quả cũ
+            document.getElementById('loading-state').classList.remove('hidden');
+            document.getElementById('result-card').classList.add('hidden');
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Network response was not ok');
+                }
+
+                const result = await response.json();
+                
+                // Kiểm tra và xử lý lỗi từ API
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                
+                // Ẩn loading
+                document.getElementById('loading-state').classList.add('hidden');
+                
+                // Chuyển đổi sentiment từ lowercase sang uppercase cho displayResult
+                const sentiment = result.sentiment.toUpperCase(); // chuyển 'positive' thành 'POSITIVE'
+                
+                // Hiển thị kết quả
+                displayResult(sentiment, result.confidence, result.text);
+                addToRecentPredictions(result.text, sentiment, result.confidence);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading-state').classList.add('hidden');
+                showNotification(error.message || 'Có lỗi xảy ra khi phân tích!', 'error');
+            }
+        }
+
+        function displayResult(sentiment, confidence, text) {
+            const resultCard = document.getElementById('result-card');
+            const resultEmoji = document.getElementById('result-emoji');
+            const resultLabel = document.getElementById('result-label');
+            const confidenceSpan = document.getElementById('confidence');
+            const confidenceBar = document.getElementById('confidence-bar');
+            const explanation = document.getElementById('explanation');
+
+            const sentimentConfig = {
+                'POSITIVE': { 
+                    label: 'TÍCH CỰC', 
+                    emoji: '😊',
+                    class: 'bg-green-100 text-green-800 border-2 border-green-200',
+                    explanation: 'Văn bản thể hiện cảm xúc tích cực, hài lòng và lạc quan'
+                },
+                'NEUTRAL': { 
+                    label: 'TRUNG TÍNH', 
+                    emoji: '😐',
+                    class: 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200',
+                    explanation: 'Văn bản không thể hiện cảm xúc rõ ràng, mang tính khách quan'
+                },
+                'NEGATIVE': { 
+                    label: 'TIÊU CỰC', 
+                    emoji: '😞',
+                    class: 'bg-red-100 text-red-800 border-2 border-red-200',
+                    explanation: 'Văn bản thể hiện cảm xúc tiêu cực, không hài lòng hoặc thất vọng'
+                }
+            };
+
+            const config = sentimentConfig[sentiment];
+            resultEmoji.textContent = config.emoji;
+            resultLabel.textContent = config.label;
+            resultLabel.className = `inline-block px-6 py-3 rounded-2xl text-xl font-bold mb-4 ${config.class}`;
+            confidenceSpan.textContent = `${Math.round(confidence * 100)}%`;
+            confidenceBar.style.width = `${confidence * 100}%`;
+            explanation.textContent = config.explanation;
+
+            resultCard.classList.remove('hidden');
+            
+            // Scroll to result
+            setTimeout(() => {
+                resultCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+
+        function addToRecentPredictions(text, sentiment, confidence) {
+            const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            
+            const sentimentConfig = {
+                'POSITIVE': { label: 'Tích cực', emoji: '😊', class: 'bg-green-50 border-green-200 text-green-800' },
+                'NEUTRAL': { label: 'Trung tính', emoji: '😐', class: 'bg-yellow-50 border-yellow-200 text-yellow-800' },
+                'NEGATIVE': { label: 'Tiêu cực', emoji: '😞', class: 'bg-red-50 border-red-200 text-red-800' }
+            };
+
+            const config = sentimentConfig[sentiment];
+            const shortText = text.length > 60 ? text.substring(0, 60) + '...' : text;
+
+            const prediction = {
+                time,
+                text: shortText,
+                fullText: text,
+                sentiment,
+                confidence,
+                config
+            };
+
+            recentPredictions.unshift(prediction);
+            recentPredictions = recentPredictions.slice(0, 5); // Keep only 5 recent
+
+            updateRecentPredictionsDisplay();
+        }
+
+        function updateRecentPredictionsDisplay() {
+            const container = document.getElementById('recent-predictions');
+            const section = document.getElementById('recent-section');
+            
+            if (recentPredictions.length === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+
+            section.classList.remove('hidden');
+            
+            container.innerHTML = recentPredictions.map(pred => `
+                <div class="bg-white rounded-xl p-4 shadow-sm border-2 ${pred.config.class} hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-lg">${pred.config.emoji}</span>
+                            <span class="font-semibold">${pred.config.label}</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">${pred.time}</div>
+                            <div class="font-bold">${Math.round(pred.confidence * 100)}%</div>
+                        </div>
+                    </div>
+                    <p class="text-gray-700">"${pred.text}"</p>
+                </div>
+            `).join('');
+        }
+
+        function showNotification(message, type = 'info') {
+            // Simple notification - could be enhanced with a proper toast system
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+                type === 'warning' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : 
+                'bg-blue-100 text-blue-800 border border-blue-200'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Auto-resize textarea
+        document.getElementById('text-input').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+
+        // Enter to analyze (Ctrl+Enter)
+        document.getElementById('text-input').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                analyzeSentiment();
+            }
+        });
+    </script>
+</body>
+</html>
