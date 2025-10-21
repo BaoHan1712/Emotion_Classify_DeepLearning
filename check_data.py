@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Đường dẫn tới file CSV
-file_path = r"data_clean\feedback_valid_clean.csv"
+file_path = r"data_clean\feedback_train_clean.csv"
 
 # Đọc dữ liệu
 df = pd.read_csv(file_path)
